@@ -22,7 +22,7 @@ preimage rel attr = Set.map fst $ Set.filter (\(x,y) -> y == attr) rel
 getIntent :: (Ord a, Ord b) => Context a b -> Set a -> Set b
 getIntent (Context1 g m rel) objs = Set.fold Set.intersection m $ Set.map (image rel) objs
 
-getExtent:: (Ord a, Ord b) => Context a b -> Set b -> Set a
+getExtent :: (Ord a, Ord b) => Context a b -> Set b -> Set a
 getExtent (Context1 g m rel) attr = Set.fold Set.intersection g $ Set.map (preimage rel) attr
 
 
