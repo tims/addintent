@@ -44,8 +44,6 @@ addIntent intent (Concept objs attr) lattice = undefined
 
 getMaximalConcept intent c lattice@(Set n) =
 
-
-
 Function GetMaximalConcept(intent, GeneratorConcept, L)
   parentIsMaximal := true
   While parentIsMaximal
