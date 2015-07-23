@@ -14,8 +14,11 @@ class Relation(object):
         self.preimages[y].add(x)
 
     def remove(self, x, y):
-        self.images[x].remove(y)
-        self.preimages[y].remove(x)
+        try:
+            self.images[x].remove(y)
+            self.preimages[y].remove(x)
+        except:
+            pass
 
     def image(self, x):
         return self.images[x]
@@ -51,8 +54,14 @@ class Lattice(object):
 
 class Concept(object):
     def __init__(self, extent, intent):
-        self.extent = set(extent)
-        self.intent = set(intent)
+        self.extent = frozenset(extent)
+        self.intent = frozenset(intent)
+
+    def __hash__(self):
+        return hash((self.extent, self.intent))
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
 
     def __repr__(self):
         return repr(("".join(map(str, self.extent)), "".join(map(str, self.intent))))
@@ -71,10 +80,11 @@ def get_maximal_generator(intent, generator_concept, lattice):
     return generator_concept
 
 
-def add_intent(intent, generator_concept, lattice):
-    print 'adding intent', intent, 'for generator concept', generator_concept
+def add_intent(obj, intent, generator_concept, lattice):
+    print 'adding obj', obj, 'intent', intent, 'for generator concept', generator_concept
     generator_concept = get_maximal_generator(intent, generator_concept, lattice)
     if generator_concept.intent == intent:
+        print generator_concept, intent
         return generator_concept
 
     parents = lattice.parents(generator_concept)
@@ -83,7 +93,7 @@ def add_intent(intent, generator_concept, lattice):
         if not candidate.intent < intent:
             print 'found a candidate parent', candidate, 'above', generator_concept
             print 'new intent', candidate.intent.intersection(intent)
-            candidate = add_intent(candidate.intent.intersection(intent), candidate, lattice)
+            candidate = add_intent(obj, candidate.intent.intersection(intent), candidate, lattice)
 
         add_parent = True
         for parent in new_parents:
@@ -95,8 +105,8 @@ def add_intent(intent, generator_concept, lattice):
         if add_parent:
             new_parents.add(candidate)
 
-    new_concept = Concept(generator_concept.extent, intent)
-
+    new_concept = Concept(generator_concept.extent.union(set(obj)), intent)
+    print 'new concept', new_concept
     lattice.add_concept(new_concept)
     for parent in new_parents:
         lattice.remove_link(parent, generator_concept)
@@ -109,27 +119,25 @@ def add_intent(intent, generator_concept, lattice):
 
 def create_lattice_incrementally(g, m, i):
     bottom = Concept(set(), set(m))
-    top = Concept(set(g), set())
     lattice = Lattice([])
     lattice.add_concept(bottom)
-    lattice.add_concept(top)
-    lattice.add_link(top, bottom)
 
     for obj in g:
-        intent = i.preimage(obj)
+        intent = i.image(obj)
         # should this replace the bottom concept or something? how does that work...
-        concept = add_intent(intent, bottom, lattice)
-
+        add_intent(obj, intent, bottom, lattice)
         # then add obj to extent of concept and all concepts above it.
+        # concept.extent.add(obj)
     return lattice
 
 
 if __name__ == '__main__':
     rel = Relation([
-        (1, 1),
-        (1, 2),
-        (2, 2),
-        (2, 3),
-        (3, 3)
+        ('a', 'x'),
+        ('a', 'y'),
+        ('b', 'y'),
+        ('b', 'z'),
     ])
-    create_lattice_incrementally([1, 2, 3], [1, 2, 3], rel)
+    l = create_lattice_incrementally(['a', 'b'], ['x', 'y','z'], rel)
+    print 'FINAL LATTICE:'
+    print l

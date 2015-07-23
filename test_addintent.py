@@ -62,7 +62,11 @@ class TestLattice(unittest.TestCase):
         self.assertEquals(lattice.parents(bottom), set([left, right]))
 
 
-
+class TestCreateLattice(unittest.TestCase):
+    def test_trivial_lattice(self):
+        rel = Relation([])
+        l = create_lattice_incrementally([], ['a'], rel)
+        self.assertEquals(l.concepts, set([Concept([], 'a')]))
 
 if __name__ == '__main__':
     unittest.main()
