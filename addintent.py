@@ -30,6 +30,7 @@ class Relation(object):
 class Lattice(object):
     def __init__(self, links):
         self.concepts = set()
+        self._attributes = set()
         self._relation = Relation([])
         for a, b in links:
             self.add_concept(a)
@@ -41,6 +42,11 @@ class Lattice(object):
 
     def add_concept(self, concept):
         self.concepts.add(concept)
+        for attr in concept.intent:
+            self._attributes.add(attr)
+
+    def bottom(self):
+        return Concept([], frozenset(self._attributes))
 
     def add_link(self, parent, child):
         self._relation.add(parent, child)
