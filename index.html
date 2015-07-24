@@ -16,48 +16,119 @@
         stroke: #999;
         stroke-opacity: .6;
     }
+
+    body {
+        display: flex
+    }
+
+    .chart {
+        flex: 4
+    }
+
+    .lengend {
+        flex: 1
+    }
 </style>
 
 <body>
-<div>Hi</div>
+
+<form id="add_intent_form" method="POST" onSubmit="return handleSubmit()">
+    <input name="object">
+    <input name="attribute">
+    <input type="submit"/>
+</form>
+
+<div id="chart">
+
+</div>
+<div id="legend">
+    <h3>objects</h3>
+    <ul class="objects"></ul>
+    <h3>attributes</h3>
+    <ul class="attributes"></ul>
+</div>
 
 <script>
-    var color = d3.scale.category20();
+    function handleSubmit(event) {
+        var form = $('#add_intent_form')
+        new Promise(function (resolve, reject) {
+            $.ajax({
+                type: 'POST',
+                url: 'http://localhost:5000/add_intent',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    object: form.find('input[name=object]').val(),
+                    attribute: form.find('input[name=attribute]').val()
+                }),
+                success: resolve,
+                error: reject
+            });
+        })
+                .then(fetch)
+                .then(showLengend)
+                .then(renderGraph);
 
-    var fetch = new Promise(function (resolve, reject) {
-        $.ajax({
-            type: 'get',
-            url: 'http://localhost:5000',
-            success: resolve,
-            error: reject
+
+        return false;
+    }
+
+    function showLengend(data) {
+        var item = d3.select('#legend ul.attributes').selectAll('li').data(data.attributes).enter();
+        item.append('li').text(function(d) {
+            return d;
         });
+        var item = d3.select('#legend ul.objects').selectAll('li').data(data.objects).enter();
+        item.append('li').text(function(d) {
+            return d;
+        });
+        return data;
+    }
+
+
+
+    $(window).on('clicked-node', function (e, d) {
+        console.log('clicked', d.extent, d.intent)
     });
 
+    var color = d3.scale.category20();
 
-    var height = 600;
-    var width = 800;
+    function fetch() {
+        return new Promise(function (resolve, reject) {
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:5000',
+                success: resolve,
+                error: reject
+            });
+        });
+    }
 
-    var svg = d3.select("body").append("svg")
+
+    var height = 300;
+    var width = 300;
+
+    var svg = d3.select("#chart").append("svg")
             .attr("width", width)
             .attr("height", height);
 
-    var d3cola = cola.d3adaptor()
-            .size([width, height]);
 
     var constraints = [
         {"axis": "y", "left": 0, "right": 1, "gap": 25}
     ];
 
-    fetch.then(function (data) {
+    function renderGraph(data) {
+
         console.log(data);
+        var d3cola = cola.d3adaptor()
+                .size([width, height]);
 
         d3cola
                 .avoidOverlaps(true)
                 .convergenceThreshold(1e-3)
-                .flowLayout('y', 150)
+                .flowLayout('y', 40)
                 .nodes(data.nodes)
                 .links(data.links)
-                .jaccardLinkLengths(150)
+                .jaccardLinkLengths(40)
                 .start(10, 15, 20);
 
 
@@ -71,12 +142,14 @@
 
         var link = svg.selectAll(".link")
                 .data(data.links)
-                .enter().append("line")
+
+        link.enter().append("line")
                 .attr("class", "link")
-                .style("stroke-width", 2)
-                .attr("x1", function (d) {
-                    return d.source.x;
-                })
+                .style("stroke-width", 2);
+
+        link.attr("x1", function (d) {
+            return d.source.x;
+        })
                 .attr("y1", function (d) {
                     return d.source.y;
                 })
@@ -88,20 +161,29 @@
                 });
 
         var node = svg.selectAll(".node")
-                .data(data.nodes)
+                .data(data.nodes);
+
+        node
                 .enter().append("circle")
                 .attr("class", "node")
-                .attr("r", 5)
+                .attr("r", 10)
+                .on('click', function (d) {
+                    $(window).trigger('clicked-node', d);
+                })
                 .style("fill", function (d) {
                     return color(d.id);
-                })
+                });
+
+        node
                 .attr("cx", function (d) {
                     return d.x;
                 })
                 .attr("cy", function (d) {
                     return d.y;
                 });
-    });
+
+    }
+    fetch().then(showLengend).then(renderGraph);
 
 
 </script>

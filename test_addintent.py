@@ -44,6 +44,7 @@ class TestGetMaximalGenerator(unittest.TestCase):
         self.assertEquals(get_maximal_generator(set('ab'), bottom, lattice), bottom)
         self.assertEquals(get_maximal_generator(set('c'), bottom, lattice), bottom)
 
+
 class TestLattice(unittest.TestCase):
     def test_parents(self):
         top = Concept([1, 2], [])
@@ -67,6 +68,56 @@ class TestCreateLattice(unittest.TestCase):
         rel = Relation([])
         l = create_lattice_incrementally([], ['a'], rel)
         self.assertEquals(l.concepts, set([Concept([], 'a')]))
+
+
+class TestAddIntent(unittest.TestCase):
+    def test_insert_into_middle(self):
+        top = Concept([1], [])
+        bottom = Concept([], ['a', 'b'])
+        lattice = Lattice([
+            (top, bottom)
+        ])
+
+        add_intent(2, set('b'), bottom, lattice)
+        self.assertEquals(len(lattice._relation.images), 2)
+        self.assertEquals(lattice.parents(bottom), set([Concept([2], ['b'])]))
+        self.assertEquals(lattice.children(top), set([Concept([2], ['b'])]))
+
+    def test_insert_into_one_side(self):
+        left = Concept([1], 'ab')
+        right = Concept([2], 'cd')
+        bottom = Concept([], 'abcded')
+        lattice = Lattice([
+            (left, bottom),
+            (right, bottom)
+        ])
+        middleright = Concept([4], 'cde')
+
+        add_intent(4, middleright.intent, bottom, lattice)
+        self.assertEquals(len(lattice._relation.images), 4)
+        self.assertEquals(lattice.parents(middleright), set([right]))
+        self.assertEquals(lattice.parents(bottom), set([left, middleright]))
+
+    def test_insert_into_one_side(self):
+        left = Concept([1], 'ac')
+        right = Concept([2], 'bc')
+        bottom = Concept([], 'abcd')
+        lattice = Lattice([
+            (left, bottom),
+            (right, bottom)
+        ])
+        middleright = Concept([4], 'bcd')
+
+        add_intent(4, middleright.intent, bottom, lattice)
+        self.assertEquals(len(lattice._relation.images), 4)
+        self.assertEquals(lattice.parents(middleright), set([right]))
+        self.assertEquals(lattice.parents(bottom), set([left, middleright]))
+
+        # print 'BANANAS', lattice
+        # self.assertEquals(lattice.parents(bottom), set([Concept([2], ['b'])]))
+        # self.assertEquals(lattice.children(top), set([Concept([2], ['b'])]))
+
+
 
 if __name__ == '__main__':
     unittest.main()

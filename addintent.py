@@ -30,8 +30,8 @@ class Relation(object):
 class Lattice(object):
     def __init__(self, links):
         self.concepts = set()
-        self._attributes = set()
         self._relation = Relation([])
+        self._bottom = None
         for a, b in links:
             self.add_concept(a)
             self.add_concept(b)
@@ -40,18 +40,25 @@ class Lattice(object):
     def parents(self, concept):
         return self._relation.preimage(concept)
 
+    def children(self, concept):
+        return self._relation.image(concept)
+
     def add_concept(self, concept):
+        if self._bottom is None:
+            self._bottom = concept
         self.concepts.add(concept)
-        for attr in concept.intent:
-            self._attributes.add(attr)
 
     def bottom(self):
-        return Concept([], frozenset(self._attributes))
+        return self._bottom
 
     def add_link(self, parent, child):
+        if parent == self._bottom:
+            self._bottom = child
         self._relation.add(parent, child)
 
     def remove_link(self, parent, child):
+        if child == self._bottom:
+            self._bottom = parent
         self._relation.remove(parent, child)
 
     def __repr__(self):
@@ -70,7 +77,7 @@ class Concept(object):
         return self.__hash__() == other.__hash__()
 
     def __repr__(self):
-        return repr(("".join(map(str, self.extent)), "".join(map(str, self.intent))))
+        return repr((".".join(map(str, self.extent)), ".".join(map(str, self.intent))))
 
 
 def get_maximal_generator(intent, generator_concept, lattice):
@@ -85,12 +92,23 @@ def get_maximal_generator(intent, generator_concept, lattice):
                 parent_is_maximal = True  # continue loop and check new generator's parents
     return generator_concept
 
+def make_new_parents(parents, candidate):
+    new_parents = set(parents)
+    add_concept = True
+    for concept in parents:
+        if candidate.intent <= concept.intent:
+            add_concept = False
+            break
+        elif concept.intent <= candidate.intent:
+            new_parents.remove(concept)
+    if add_concept:
+        new_parents.add(candidate)
+    return new_parents
 
 def add_intent(obj, intent, generator_concept, lattice):
     print 'adding obj', obj, 'intent', intent, 'for generator concept', generator_concept
     generator_concept = get_maximal_generator(intent, generator_concept, lattice)
     if generator_concept.intent == intent:
-        print generator_concept, intent
         return generator_concept
 
     parents = lattice.parents(generator_concept)
@@ -100,18 +118,9 @@ def add_intent(obj, intent, generator_concept, lattice):
             print 'found a candidate parent', candidate, 'above', generator_concept
             print 'new intent', candidate.intent.intersection(intent)
             candidate = add_intent(obj, candidate.intent.intersection(intent), candidate, lattice)
+        new_parents = make_new_parents(new_parents, candidate)
 
-        add_parent = True
-        for parent in new_parents:
-            if candidate.intent <= parent.intent:
-                add_parent = False
-            elif parent.intent <= candidate.intent:
-                new_parents.remove(parent)
-
-        if add_parent:
-            new_parents.add(candidate)
-
-    new_concept = Concept(generator_concept.extent.union(set(obj)), intent)
+    new_concept = Concept(generator_concept.extent.union(set([obj])), intent)
     print 'new concept', new_concept
     lattice.add_concept(new_concept)
     for parent in new_parents:
