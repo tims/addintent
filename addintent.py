@@ -128,7 +128,10 @@ def make_new_parents(parents, candidate):
 def add_intent(obj, intent, generator_concept, lattice):
     generator_concept = get_maximal_generator(intent, generator_concept, lattice)
     if generator_concept.intent == intent:
+        print 'generator intent has the same intent as the added intent', intent, generator_concept
         new_concept = Concept(generator_concept.extent.union(set([obj])), intent)
+
+        # TODO update parents
         lattice.replace_concept(generator_concept, new_concept)
         return new_concept
 
@@ -136,6 +139,7 @@ def add_intent(obj, intent, generator_concept, lattice):
     new_parents = set()
     for candidate in parents:
         if not candidate.intent < intent:
+            print 'running add intent on candidate parent', candidate
             candidate = add_intent(obj, candidate.intent.intersection(intent), candidate, lattice)
         new_parents = make_new_parents(new_parents, candidate)
 

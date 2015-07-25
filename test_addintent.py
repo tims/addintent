@@ -139,6 +139,23 @@ class TestAddIntent(unittest.TestCase):
         self.assertEquals(lattice.top(), Concept([1, 2], 'a'))
         self.assertEquals(lattice.bottom(), Concept([], 'ab'))
 
+    def test_make_3_branches(self):
+        bottom = Concept([], 'abc')
+        lattice = Lattice([])
+        lattice.add_concept(bottom)
+
+        add_intent(1, set(['a']), bottom, lattice)
+        add_intent(2, set(['b']), bottom, lattice)
+        add_intent(3, set(['c']), bottom, lattice)
+
+        print lattice._relation.images
+        print lattice._relation.preimages
+        print lattice.concepts
+        self.assertEquals(len(lattice.concepts), 5)
+
+        self.assertEquals(lattice.top(), Concept([1, 2, 3], ''))
+        self.assertEquals(lattice.bottom(), Concept([], 'abc'))
+
 
 if __name__ == '__main__':
     unittest.main()
