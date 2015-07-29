@@ -72,31 +72,31 @@ class TestCreateLattice(unittest.TestCase):
 
 class TestAddIntent(unittest.TestCase):
     def test_insert_into_middle(self):
-        top = Concept([1], [])
-        bottom = Concept([], ['a', 'b'])
-        lattice = Lattice([
-            (top, bottom)
-        ])
-
+        lattice = Lattice([])
+        bottom = Concept([], ['a', 'b']);
+        lattice.add_concept(bottom)
+        add_intent(1, set(), bottom, lattice)
         add_intent(2, set('b'), bottom, lattice)
-        self.assertEquals(len(lattice._relation.images), 2)
+        self.assertEquals(len(lattice.concepts), 3)
         self.assertEquals(lattice.parents(bottom), set([Concept([2], ['b'])]))
-        self.assertEquals(lattice.children(top), set([Concept([2], ['b'])]))
+        self.assertEquals(lattice.children(lattice.top()), set([Concept([2], ['b'])]))
 
     def test_insert_into_lower_right_side(self):
-        left = Concept([1], 'ab')
-        right = Concept([2], 'cd')
         bottom = Concept([], 'abcded')
-        lattice = Lattice([
-            (left, bottom),
-            (right, bottom)
-        ])
-        lowerright = Concept([4], 'cde')
 
+        lattice = Lattice([])
+        lattice.add_concept(Concept([], 'abcded'))
+        add_intent(1, set(['a', 'b']), bottom, lattice)
+        add_intent(2, set(['c', 'd']), bottom, lattice)
+
+        lowerright = Concept([4], 'cde')
         add_intent(4, lowerright.intent, bottom, lattice)
-        self.assertEquals(len(lattice._relation.images), 4)
-        self.assertEquals(lattice.parents(lowerright), set([right]))
-        self.assertEquals(lattice.parents(bottom), set([left, lowerright]))
+        print 'CONCEPTS', lattice.concepts
+        for c in lattice._relation.images:
+            print c, '\t=>', lattice._relation.image(c)
+        self.assertEquals(len(lattice.concepts), 5)
+        self.assertEquals(lattice.parents(lowerright), set([Concept([2, 4], 'cd')]))
+        self.assertEquals(lattice.parents(bottom), set([Concept([1], 'ab'), lowerright]))
 
     def test_insert_into_upper_left_and_lower_right_side(self):
         bottom = Concept([], 'abcd')
@@ -113,10 +113,10 @@ class TestAddIntent(unittest.TestCase):
         add_intent(3, set('acd'), bottom, lattice)
 
         self.assertEquals(len(lattice.concepts), 6)
-        self.assertEquals(lattice.children(lattice.top()), set([Concept([1, 3], 'a'), Concept([2], 'cd')]))
+        self.assertEquals(lattice.children(lattice.top()), set([Concept([1, 3], 'a'), Concept([2, 3], 'cd')]))
         self.assertEquals(lattice.parents(lattice.bottom()), set([Concept([1], 'ab'), Concept([3], 'acd')]))
         self.assertEquals(lattice.children(Concept([1, 3], 'a')), set([Concept([1], 'ab'), Concept([3], 'acd')]))
-        self.assertEquals(lattice.parents(Concept([3], 'acd')), set([Concept([1, 3], 'a'), Concept([2], 'cd')]))
+        self.assertEquals(lattice.parents(Concept([3], 'acd')), set([Concept([1, 3], 'a'), Concept([2, 3], 'cd')]))
 
     def test_modify_existing_concept_with_same_intent(self):
         bottom = Concept([], 'ab')
@@ -148,13 +148,21 @@ class TestAddIntent(unittest.TestCase):
         add_intent(2, set(['b']), bottom, lattice)
         add_intent(3, set(['c']), bottom, lattice)
 
-        print lattice._relation.images
-        print lattice._relation.preimages
-        print lattice.concepts
         self.assertEquals(len(lattice.concepts), 5)
-
         self.assertEquals(lattice.top(), Concept([1, 2, 3], ''))
         self.assertEquals(lattice.bottom(), Concept([], 'abc'))
+
+    def test_new_object_should_bubble_to_parent_concepts(self):
+        bottom = Concept([], 'ab')
+        lattice = Lattice([])
+        lattice.add_concept(bottom)
+
+        add_intent(1, set(['a']), bottom, lattice)
+        add_intent(2, set(['a', 'b']), bottom, lattice)
+
+        self.assertEquals(len(lattice.concepts), 2)
+        self.assertEquals(lattice.top(), Concept([1, 2], 'a'))
+        self.assertEquals(lattice.bottom(), Concept([2], 'ab'))
 
 
 if __name__ == '__main__':

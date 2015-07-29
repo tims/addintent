@@ -70,6 +70,7 @@ class Lattice(object):
     def replace_concept(self, concept, new_concept):
         parents = self.parents(concept)
         children = self.children(concept)
+        self.concepts.remove(concept)
         self.add_concept(new_concept)
         for parent in set(parents):
             self.remove_link(parent, concept)
@@ -77,7 +78,7 @@ class Lattice(object):
         for child in set(children):
             self.remove_link(concept, child)
             self.add_link(new_concept, child)
-        self.concepts.remove(concept)
+
 
 
     def __repr__(self):
@@ -96,7 +97,7 @@ class Concept(object):
         return self.__hash__() == other.__hash__()
 
     def __repr__(self):
-        return repr((".".join(map(str, self.extent)), ".".join(map(str, self.intent))))
+        return repr((".".join(sorted(map(str, self.extent))), ".".join(sorted(map(str, self.intent)))))
 
 
 def get_maximal_generator(intent, generator_concept, lattice):
@@ -125,10 +126,17 @@ def make_new_parents(parents, candidate):
     return new_parents
 
 
+def add_object_to_parents(obj, concept, lattice):
+    new_concept = Concept(concept.extent.union(set([obj])), concept.intent)
+    lattice.replace_concept(concept, new_concept)
+    parents = lattice.parents(concept)
+    for parent in parents:
+        add_object_to_parents(obj, parent, lattice)
+
+
 def add_intent(obj, intent, generator_concept, lattice):
     generator_concept = get_maximal_generator(intent, generator_concept, lattice)
     if generator_concept.intent == intent:
-        print 'generator intent has the same intent as the added intent', intent, generator_concept
         new_concept = Concept(generator_concept.extent.union(set([obj])), intent)
 
         # TODO update parents
@@ -139,7 +147,6 @@ def add_intent(obj, intent, generator_concept, lattice):
     new_parents = set()
     for candidate in parents:
         if not candidate.intent < intent:
-            print 'running add intent on candidate parent', candidate
             candidate = add_intent(obj, candidate.intent.intersection(intent), candidate, lattice)
         new_parents = make_new_parents(new_parents, candidate)
 
@@ -149,6 +156,8 @@ def add_intent(obj, intent, generator_concept, lattice):
         lattice.remove_link(parent, generator_concept)
         lattice.add_link(parent, new_concept)
     lattice.add_link(new_concept, generator_concept)
+    add_object_to_parents(obj, new_concept, lattice)
+
     return new_concept
 
 
