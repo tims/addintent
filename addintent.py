@@ -1,7 +1,6 @@
 from collections import defaultdict
 import sys
 
-
 class Relation(object):
     def __init__(self, pairs):
         self.images = defaultdict(set)

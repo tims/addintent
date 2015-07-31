@@ -17,7 +17,7 @@
         stroke-opacity: .6;
     }
 
-    body {
+    #main {
         display: flex
     }
 
@@ -38,14 +38,21 @@
     <input type="submit"/>
 </form>
 
-<div id="chart">
+<div id="main">
+    <div id="chart">
 
-</div>
-<div id="legend">
-    <h3>objects</h3>
-    <ul class="objects"></ul>
-    <h3>attributes</h3>
-    <ul class="attributes"></ul>
+    </div>
+    <div id="legend">
+        <div class="selected">
+            <h3>Selected</h3>
+            <h4>extent</h4>
+
+            <div class="extent"></div>
+            <h4>intent</h4>
+
+            <div class="intent"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -73,20 +80,14 @@
     }
 
     function showLengend(data) {
-        var item = d3.select('#legend ul.attributes').selectAll('li').data(data.attributes).enter();
-        item.append('li').text(function (d) {
-            return d;
-        });
-        var item = d3.select('#legend ul.objects').selectAll('li').data(data.objects).enter();
-        item.append('li').text(function (d) {
-            return d;
-        });
         return data;
     }
 
 
     $(window).on('clicked-node', function (e, d) {
-        console.log('clicked', d.extent, d.intent)
+        console.log('clicked', d.extent, d.intent);
+        $('.selected .intent').text(d.intent);
+        $('.selected .extent').text(d.extent);
     });
 
     var color = d3.scale.category20();
@@ -124,10 +125,10 @@
         d3cola
                 .avoidOverlaps(true)
                 .convergenceThreshold(1e-3)
-                .flowLayout('y', 40)
+                .flowLayout('y', 60)
                 .nodes(data.nodes)
                 .links(data.links)
-                .jaccardLinkLengths(40)
+                .jaccardLinkLengths(60)
                 .start(10, 15, 20);
 
 
